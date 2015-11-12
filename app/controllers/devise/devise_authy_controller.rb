@@ -3,7 +3,7 @@ class Devise::DeviseAuthyController < DeviseController
     :request_sms
   ]
   prepend_before_filter :find_resource_and_require_password_checked, :only => [
-    :GET_verify_authy, :POST_verify_authy
+    :GET_verify_authy, :POST_verify_authy, :GET_verify_onetouch_authy
   ]
   prepend_before_filter :authenticate_scope!, :only => [
     :GET_enable_authy, :POST_enable_authy,
@@ -14,16 +14,25 @@ class Devise::DeviseAuthyController < DeviseController
 
   def GET_verify_authy
     @authy_id = @resource.authy_id
+    if @resource.class.authy_enable_onetouch
+      begin
+        result = Authy::OneTouch.send_approval_request({:id => @resource.authy_id, :message => 'Testing OneTouch'})
+        session["#{resource_name}_authy_onetouch_uuid"] = result["approval_request"]["uuid"]
+      rescue Exception
+        session.delete("#{resource_name}_authy_onetouch_uuid")
+      end
+
+    end
     render :verify_authy
   end
 
   # verify 2fa
   def POST_verify_authy
     token = Authy::API.verify({
-      :id => @resource.authy_id,
-      :token => params[:token],
-      :force => true
-    })
+                                  :id => @resource.authy_id,
+                                  :token => params[:token],
+                                  :force => true
+                              })
 
     if token.ok?
       @resource.update_attribute(:last_sign_in_with_authy, DateTime.now)
@@ -39,6 +48,27 @@ class Devise::DeviseAuthyController < DeviseController
     else
       handle_invalid_token :verify_authy, :invalid_token
     end
+  end
+
+  # verify 2fa (onetouch)
+  def GET_verify_onetouch_authy
+    output = {:result => false}
+    begin
+      result = Authy::OneTouch.approval_request_status :uuid => session["#{resource_name}_authy_onetouch_uuid"]
+      if result["success"] and result["approval_request"]["status"] == "approved"
+        @resource.update_attribute(:last_sign_in_with_authy, DateTime.now)
+
+        sign_in(resource_name, @resource)
+
+        set_flash_message(:notice, :signed_in) if is_navigational_format?
+        output[:result] = true
+        output[:redirect_to] = after_sign_in_path_for(@resource)
+      end
+    rescue Exception => e
+      output[:message] = e.to_s
+    end
+
+    render :json => output
   end
 
   # enable 2fa

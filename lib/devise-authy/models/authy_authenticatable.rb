@@ -17,7 +17,7 @@ module Devise
           find(:first, :conditions => {:authy_id => authy_id})
         end
 
-        Devise::Models.config(self, :authy_remember_device)
+        Devise::Models.config(self, :authy_remember_device, :authy_enable_onetouch, :authy_onetouch_expiration)
       end
     end
   end

@@ -13,7 +13,11 @@ module DeviseAuthy
         inject_into_file "config/initializers/devise.rb", "\n" +
         "  # ==> Devise Authy Authentication Extension\n" +
         "  # How long should the user's device be remembered for.\n" +
-        "  # config.authy_remember_device = 1.month\n\n", :before => /^end[\r\n]*$/
+        "  # config.authy_remember_device = 1.month\n\n" +
+        "  # Enable Authy OneTouch.\n" +
+        "  # config.authy_one_touch = true\n\n" +
+        "  # When does the callback from Authy expire.\n" +
+        "  # config.authy_onetouch_expiration = 10.minutes\n\n", :before => /^end[\r\n]*$/
       end
 
       def copy_locale

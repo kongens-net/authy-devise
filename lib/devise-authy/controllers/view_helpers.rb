@@ -4,12 +4,27 @@ module DeviseAuthy
 
       def authy_request_sms_link
         link_to(
-          I18n.t('request_sms', {:scope => 'devise'}),
-          url_for([resource_name, :request_sms]),
-          :id => "authy-request-sms-link",
-          :method => :post,
-          :remote => true
+            I18n.t('request_sms', {:scope => 'devise'}),
+            url_for([resource_name, :request_sms]),
+            :id => "authy-request-sms-link",
+            :method => :post,
+            :remote => true
         )
+      end
+
+      def authy_onetouch_javascript
+        javascript_tag <<"JS"
+        $(function(){
+          setInterval(function(){
+            $.get('/users/verify-onetouch-token', function(data){
+              if(data.result && data.redirect_to) {
+                window.location.replace(data.redirect_to);
+              }
+
+            })
+          }, 5000)
+        });
+JS
       end
 
       def verify_authy_form(&block)

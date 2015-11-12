@@ -6,6 +6,12 @@ require 'authy'
 module Devise
   mattr_accessor :authy_remember_device
   @@authy_remember_device = 1.month
+
+  mattr_accessor :authy_enable_onetouch
+  @@authy_enable_onetouch = false
+
+  mattr_accessor :authy_onetouch_expiration
+  @@authy_onetouch_expiration = 10.minutes
 end
 
 module DeviseAuthy

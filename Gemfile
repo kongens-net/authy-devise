@@ -1,7 +1,8 @@
 source "https://rubygems.org"
 
 gem "devise"
-gem 'authy'
+gem 'authy', :github => 'authy/authy-ruby'
+gem 'dalli'
 
 group :development do
   gem "rspec"
