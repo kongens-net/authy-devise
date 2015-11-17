@@ -17,7 +17,7 @@ class Devise::DeviseAuthyController < DeviseController
     @authy_id = @resource.authy_id
     if @resource.class.authy_enable_onetouch
       begin
-        result = Authy::OneTouch.send_approval_request({:id => @resource.authy_id, :message => 'User authentication'})
+        result = Authy::OneTouch.send_approval_request({:id => @resource.authy_id, :message => 'User authentication', :seconds_to_expire => 10.minutes})
         session["#{resource_name}_authy_onetouch_uuid"] = result["approval_request"]["uuid"]
       rescue Exception
         session.delete("#{resource_name}_authy_onetouch_uuid")
@@ -128,7 +128,7 @@ class Devise::DeviseAuthyController < DeviseController
   def GET_verify_authy_installation
     if @resource.class.authy_enable_onetouch
       begin
-        result = Authy::OneTouch.send_approval_request({:id => @resource.authy_id, :message => 'Enabling two factor authentication'})
+        result = Authy::OneTouch.send_approval_request({:id => @resource.authy_id, :message => 'Enabling two factor authentication', :seconds_to_expire => 10.minutes})
         session["#{resource_name}_authy_onetouch_uuid"] = result["approval_request"]["uuid"]
       rescue Exception
         session.delete("#{resource_name}_authy_onetouch_uuid")
