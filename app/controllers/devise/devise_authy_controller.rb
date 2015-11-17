@@ -8,6 +8,7 @@ class Devise::DeviseAuthyController < DeviseController
   prepend_before_filter :authenticate_scope!, :only => [
     :GET_enable_authy, :POST_enable_authy,
     :GET_verify_authy_installation, :POST_verify_authy_installation,
+    :GET_enable_onetouch_authy,
     :POST_disable_authy
   ]
   include Devise::Controllers::Helpers
@@ -16,7 +17,7 @@ class Devise::DeviseAuthyController < DeviseController
     @authy_id = @resource.authy_id
     if @resource.class.authy_enable_onetouch
       begin
-        result = Authy::OneTouch.send_approval_request({:id => @resource.authy_id, :message => 'Testing OneTouch'})
+        result = Authy::OneTouch.send_approval_request({:id => @resource.authy_id, :message => 'User authentication'})
         session["#{resource_name}_authy_onetouch_uuid"] = result["approval_request"]["uuid"]
       rescue Exception
         session.delete("#{resource_name}_authy_onetouch_uuid")
@@ -58,6 +59,10 @@ class Devise::DeviseAuthyController < DeviseController
       if result["success"] and result["approval_request"]["status"] == "approved"
         @resource.update_attribute(:last_sign_in_with_authy, DateTime.now)
 
+        remember_device if params[:remember_device].to_i == 1
+        if session.delete("#{resource_name}_remember_me") == true && @resource.respond_to?(:remember_me=)
+          @resource.remember_me = true
+        end
         sign_in(resource_name, @resource)
 
         set_flash_message(:notice, :signed_in) if is_navigational_format?
@@ -85,7 +90,7 @@ class Devise::DeviseAuthyController < DeviseController
     @authy_user = Authy::API.register_user(
       :email => resource.email,
       :cellphone => params[:cellphone],
-      :country_code => params[:country_code]
+      :country_code => params[:country_code].to_i
     )
 
     if @authy_user.ok?
@@ -121,6 +126,15 @@ class Devise::DeviseAuthyController < DeviseController
   end
 
   def GET_verify_authy_installation
+    if @resource.class.authy_enable_onetouch
+      begin
+        result = Authy::OneTouch.send_approval_request({:id => @resource.authy_id, :message => 'Enabling two factor authentication'})
+        session["#{resource_name}_authy_onetouch_uuid"] = result["approval_request"]["uuid"]
+      rescue Exception
+        session.delete("#{resource_name}_authy_onetouch_uuid")
+      end
+
+    end
     render :verify_authy_installation
   end
 
@@ -136,9 +150,32 @@ class Devise::DeviseAuthyController < DeviseController
     if !token.ok? || !self.resource.save
       handle_invalid_token :verify_authy_installation, :not_enabled
     else
+      sign_in(resource_name, resource)
+
       set_flash_message(:notice, :enabled)
       redirect_to after_authy_verified_path_for(resource)
     end
+  end
+
+  # verify 2fa (onetouch)
+  def GET_enable_onetouch_authy
+    output = {:result => false}
+    begin
+      result = Authy::OneTouch.approval_request_status :uuid => session["#{resource_name}_authy_onetouch_uuid"]
+      if result["success"] and result["approval_request"]["status"] == "approved"
+        resource.update_attribute(:authy_enabled, true)
+
+        sign_in(resource_name, resource)
+
+        set_flash_message(:notice, :signed_in) if is_navigational_format?
+        output[:result] = true
+        output[:redirect_to] = after_authy_verified_path_for(resource)
+      end
+    rescue Exception => e
+      output[:message] = e.to_s
+    end
+
+    render :json => output
   end
 
   def request_sms

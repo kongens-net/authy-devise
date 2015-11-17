@@ -16,4 +16,4 @@
   <%= submit_tag I18n.t('submit_token', {:scope => 'devise'}), :class => 'btn' %>
 <% end %>
 
-<%= authy_onetouch_javascript if @resource.class.authy_enable_onetouch %>
+<%= authy_onetouch_javascript_verify %>

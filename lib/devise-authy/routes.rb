@@ -7,6 +7,7 @@ module ActionDispatch::Routing
       match "/#{mapping.path_names[:verify_authy]}", :controller => controllers[:devise_authy], :action => :POST_verify_authy, :as => nil, :via => :post
 
       match "/#{mapping.path_names[:verify_onetouch_authy]}", :controller => controllers[:devise_authy], :action => :GET_verify_onetouch_authy, :as => :verify_onetouch_authy, :via => :get
+      match "/#{mapping.path_names[:enable_onetouch_authy]}", :controller => controllers[:devise_authy], :action => :GET_enable_onetouch_authy, :as => :enable_onetouch_authy, :via => :get
 
       match "/#{mapping.path_names[:enable_authy]}", :controller => controllers[:devise_authy], :action => :GET_enable_authy, :as => :enable_authy, :via => :get
       match "/#{mapping.path_names[:enable_authy]}", :controller => controllers[:devise_authy], :action => :POST_enable_authy, :as => nil, :via => :post

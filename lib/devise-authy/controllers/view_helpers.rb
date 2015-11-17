@@ -12,11 +12,11 @@ module DeviseAuthy
         )
       end
 
-      def authy_onetouch_javascript
-        javascript_tag <<"JS"
+      def authy_onetouch_javascript(path, *args)
+        script = <<"JS"
         $(function(){
           setInterval(function(){
-            $.get('/users/verify-onetouch-token', function(data){
+            $.get('#{path}', #{args.to_json}, function(data){
               if(data.result && data.redirect_to) {
                 window.location.replace(data.redirect_to);
               }
@@ -25,6 +25,15 @@ module DeviseAuthy
           }, 5000)
         });
 JS
+        javascript_tag script if resource_class.authy_enable_onetouch
+      end
+
+      def authy_onetouch_javascript_verify(*args)
+        authy_onetouch_javascript send(:"#{resource_name}_verify_onetouch_authy_path", *args)
+      end
+
+      def authy_onetouch_javascript_enable(*args)
+        authy_onetouch_javascript send(:"#{resource_name}_enable_onetouch_authy_path", *args)
       end
 
       def verify_authy_form(&block)
